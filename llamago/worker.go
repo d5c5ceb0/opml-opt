@@ -1,7 +1,6 @@
 package llamago
 
 import (
-	"errors"
 	"opml-opt/callback"
 	"opml-opt/common"
 	"runtime"
@@ -10,10 +9,6 @@ import (
 
 	"github.com/gotzmann/llama.go/pkg/llama"
 	"github.com/gotzmann/llama.go/pkg/server"
-)
-
-var (
-	ErrExceedMaxJobs = errors.New("LlamaWorker exceed max jobs")
 )
 
 var LlamaWorker *Worker
@@ -109,9 +104,15 @@ func InitWorker(modelName string, modelPath string) error {
 }
 
 func Inference(qa common.OptQA) error {
+	defer func() {
+		if qa.Answer == "" && qa.Err == nil {
+			qa.Err = common.ErrJobDownUnknow
+		}
+		callback.DoneWork(qa)
+	}()
 	jobsNum := LlamaWorker.JobsNum.Load()
 	if jobsNum > LlamaWorker.MaxJobs {
-		return ErrExceedMaxJobs
+		return common.ErrExceedMaxJobs
 	}
 	LlamaWorker.JobsNum.Add(1)
 	defer LlamaWorker.JobsNum.Add(-1)
@@ -130,6 +131,5 @@ func Inference(qa common.OptQA) error {
 			break
 		}
 	}
-	callback.DoneWork(qa)
 	return nil
 }

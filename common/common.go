@@ -1,5 +1,7 @@
 package common
 
+import "errors"
+
 // {
 //     "node_id": "",
 //     "req_id": "bab34bd7-8415-4522-bb4a-6f62f3398b50", //对应请求的req_id
@@ -9,6 +11,11 @@ package common
 //     "state_root": "0x130b06b347409671f3125f3c21b7fbeb720aba7bd2a8bd1b102634750a111686"
 // }
 
+var (
+	ErrExceedMaxJobs = errors.New("LlamaWorker exceed max jobs")
+	ErrJobDownUnknow = errors.New("worker job error unknown")
+)
+
 type OptQA struct {
 	ReqId     string `json:"req_id" bson:"reqId"`
 	Model     string `json:"model" bson:"model"`
@@ -17,6 +24,7 @@ type OptQA struct {
 	StateRoot string `json:"state_root" bson:"stateRoot"`
 	StartTime int64  `json:"startTime" bson:"startTime"`
 	CallBack  string `json:"callback"`
+	Err       error  `json:"-" bson:"-"`
 }
 
 func (qa *OptQA) Done() bool {

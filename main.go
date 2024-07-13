@@ -70,11 +70,12 @@ func main() {
 }
 
 type Config struct {
-	Port      string `yaml:"port"`
-	Host      string `yaml:"host"`
-	ModelName string `yaml:"model_name"`
-	ModelPath string `yaml:"model_path"`
-	MongoURI  string `yaml:"mongo_uri"`
+	Port        string `yaml:"port"`
+	Host        string `yaml:"host"`
+	ModelName   string `yaml:"model_name"`
+	ModelPath   string `yaml:"model_path"`
+	MipsProgram string `yaml:"mips_program"`
+	MongoURI    string `yaml:"mongo_uri"`
 }
 
 func Start(ctx *cli.Context) {
@@ -112,7 +113,7 @@ func Start(ctx *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = mips.InitWorker(conf.ModelName, conf.ModelPath)
+	err = mips.InitWorker(conf.ModelName, conf.ModelPath, conf.MipsProgram)
 	if err != nil {
 		log.Fatal(err)
 	}
