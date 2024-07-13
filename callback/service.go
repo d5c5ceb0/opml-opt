@@ -3,6 +3,7 @@ package callback
 import (
 	"opml-opt/common"
 	"opml-opt/db"
+	"opml-opt/log"
 	"sync"
 )
 
@@ -19,8 +20,8 @@ func init() {
 	}
 }
 
-func (c *CallBackService) callBack() {
-
+func (c *CallBackService) callBack(qa common.OptQA) {
+	log.Infof("work done \n%v\n", qa)
 }
 
 func DoneWork(qa common.OptQA) {
@@ -47,6 +48,6 @@ func DoneWork(qa common.OptQA) {
 		delete(CallBack.MipsWorks, qa.ReqId)
 		db.InsertSingleConversation(qaExit)
 		CallBack.mu.Unlock()
-		CallBack.callBack()
+		CallBack.callBack(qaExit)
 	}
 }
