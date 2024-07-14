@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"opml-opt/log"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -196,7 +197,7 @@ func RunCheckPointZeroRoot(prompt string) (common.Hash, error) {
 		log.Errorf("layer run error: %v", err)
 		return common.Hash{}, err
 	}
-	return MIPSRunRoot(params.Basedir+"/checkpoint", 0, params.Target, MIPS_PROGRAM, nodeFile, nodeCount), nil
+	return MIPSRunRoot(params.Basedir+"/checkpoint", 0, params.Target, MIPS_PROGRAM, nodeFile, nodeCount)
 }
 
 func Run() {
@@ -260,6 +261,10 @@ func LayerRun(basedir string, nodeID int, modelName string, params *Params) (str
 	}
 
 	fileName := fmt.Sprintf("%s/node_%d", basedir, nodeID)
+	err = os.MkdirAll(filepath.Dir(fileName), os.ModePerm)
+	if err != nil {
+		return "", nodeCount, err
+	}
 	err = saveDataToFile(envBytes, fileName)
 
 	if err != nil {
@@ -285,7 +290,7 @@ func saveDataToFile(data []byte, filename string) error {
 	return nil
 }
 
-func MIPSRunRoot(basedir string, target int, nodeID int, programPath string, inputPath string, nodeCount int) common.Hash {
+func MIPSRunRoot(basedir string, target int, nodeID int, programPath string, inputPath string, nodeCount int) (common.Hash, error) {
 	regfault := -1
 	regfault_str, regfault_valid := os.LookupEnv("REGFAULT")
 	if regfault_valid {
@@ -302,6 +307,11 @@ func MIPSRunRoot(basedir string, target int, nodeID int, programPath string, inp
 		if step == target {
 			SyncRegs(mu, ram)
 			fn := fmt.Sprintf("%s/checkpoint_%d_%d.json", basedir, nodeID, step)
+			err := os.MkdirAll(filepath.Dir(fn), os.ModePerm)
+			if err != nil {
+				println(err.Error())
+				return
+			}
 			WriteCheckpointWithNodeID(ram, fn, step, nodeID, nodeCount)
 			if step == target {
 				// done
@@ -318,7 +328,8 @@ func MIPSRunRoot(basedir string, target int, nodeID int, programPath string, inp
 		LoadInputData(mu, inputPath, ram)
 	}
 
-	return WriteCheckpointWithNodeIDRoot(ram, fmt.Sprintf("%s/%d_golden.json", basedir, nodeID), -1, nodeID, nodeCount)
+	hash := WriteCheckpointWithNodeIDRoot(ram, fmt.Sprintf("%s/%d_golden.json", basedir, nodeID), -1, nodeID, nodeCount)
+	return hash, nil
 }
 
 func MIPSRun(basedir string, target int, nodeID int, programPath string, inputPath string, outputGolden bool, nodeCount int) {

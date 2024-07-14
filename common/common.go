@@ -1,6 +1,16 @@
 package common
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/google/uuid"
+)
+
+var NodeID string
+
+func init() {
+	NodeID = uuid.NewString()
+}
 
 // {
 //     "node_id": "",
@@ -25,6 +35,15 @@ type OptQA struct {
 	StartTime int64  `json:"startTime" bson:"startTime"`
 	CallBack  string `json:"callback"`
 	Err       error  `json:"-" bson:"-"`
+}
+
+type CallbackReq struct {
+	NodeId    string `json:"node_id"`
+	ReqId     string `json:"req_id"`
+	Model     string `json:"model"`
+	Prompt    string `json:"prompt"`
+	Answer    string `json:"answer"`
+	StateRoot string `json:"state_root"`
 }
 
 func (qa *OptQA) Done() bool {

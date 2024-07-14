@@ -85,6 +85,7 @@ func (c *Service) Start(ctx context.Context) error {
 
 	apiV1 := r.Group("/api/v1/")
 	apiV1.POST("/question", c.HandleQuestion)
+	apiV1.POST("/status", c.HandleStatus)
 
 	address := "0.0.0.0:" + c.port
 	r.Run(address)
@@ -158,6 +159,25 @@ func (s *Service) HandleQuestion(c *gin.Context) {
 		ResultMsg:  "",
 		ResultBody: data,
 	}
+}
+
+type StatusResp struct {
+	Status int    `json:"status"`
+	NodeId string `json:"node_id"`
+}
+
+func (s *Service) HandleStatus(c *gin.Context) {
+	status := mips.Status() & llamago.Status()
+	data, _ := json.Marshal(&StatusResp{
+		Status: status,
+		NodeId: NodeID,
+	})
+	rep := Resp{
+		ResultCode: 0,
+		ResultMsg:  "",
+		ResultBody: string(data),
+	}
+	c.JSON(http.StatusOK, rep)
 }
 
 func genWorkerID(url string) string {

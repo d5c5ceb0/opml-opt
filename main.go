@@ -106,7 +106,7 @@ func Start(ctx *cli.Context) {
 	}
 	//init db
 	db.MongoURI = conf.MongoURI
-	db.Init()
+	// db.Init()
 
 	//init workers
 	err = llamago.InitWorker(conf.ModelName, conf.ModelPath)

@@ -3,6 +3,7 @@ package llamago
 import (
 	"opml-opt/callback"
 	"opml-opt/common"
+	"opml-opt/log"
 	"runtime"
 	"sync/atomic"
 	"time"
@@ -60,6 +61,15 @@ func defaultOpts() Options {
 	}
 }
 
+func Status() int {
+	jobsNum := LlamaWorker.JobsNum.Load()
+	if jobsNum > LlamaWorker.MaxJobs {
+		return 1
+	} else {
+		return 0
+	}
+}
+
 func InitWorker(modelName string, modelPath string) error {
 	opts := defaultOpts()
 	opts.Model = modelPath
@@ -75,9 +85,9 @@ func InitWorker(modelName string, modelPath string) error {
 		RepeatLastN:   opts.Context, // TODO: Research on best value
 		PartsCount:    -1,
 		BatchSize:     opts.Context, // TODO: What's the better size?
-		TopK:          20,
-		TopP:          0.8,
-		Temp:          0,
+		TopK:          40,
+		TopP:          0.95,
+		Temp:          0.5,
 		RepeatPenalty: 1.10,
 		MemoryFP16:    true,
 	}
@@ -92,7 +102,7 @@ func InitWorker(modelName string, modelPath string) error {
 	server.Vocab = vocab
 	server.Model = model
 	server.Params = params
-
+	log.Info("starting llamago server")
 	go server.Run()
 	LlamaWorker = &Worker{
 		ModelName: modelName,
@@ -118,12 +128,19 @@ func Inference(qa common.OptQA) error {
 	defer LlamaWorker.JobsNum.Add(-1)
 
 	jobID := qa.ReqId
-	server.PlaceJob(qa.ReqId, qa.Prompt)
+	server.PlaceJob(qa.ReqId, " "+qa.Prompt)
 	qa.Answer = ""
-
+	log.Infof("llama go handling job %v", qa)
 	for {
 		time.Sleep(100 * time.Millisecond)
+		log.Debugf("llama go job check %v", qa.Answer)
+		if _, ok := server.Jobs[jobID]; !ok {
+			break
+		}
 		if qa.Answer != server.Jobs[jobID].Output {
+			if len(server.Jobs[jobID].Output) < len(qa.Answer) {
+				break
+			}
 			diff := server.Jobs[jobID].Output[len(qa.Answer):]
 			qa.Answer += diff
 		}

@@ -3,6 +3,7 @@ package mips
 import (
 	"opml-opt/callback"
 	"opml-opt/common"
+	"opml-opt/log"
 	"opml-opt/mips/vm"
 	"sync/atomic"
 )
@@ -28,6 +29,15 @@ func InitWorker(modelName string, modelPath string, programPath string) error {
 	return nil
 }
 
+func Status() int {
+	jobsNum := MipsWork.JobsNum.Load()
+	if jobsNum > MipsWork.MaxJobs {
+		return 1
+	} else {
+		return 0
+	}
+}
+
 func Inference(qa common.OptQA) error {
 	defer func() {
 		if qa.StateRoot == "" && qa.Err == nil {
@@ -40,6 +50,7 @@ func Inference(qa common.OptQA) error {
 		qa.Err = common.ErrExceedMaxJobs
 		return common.ErrExceedMaxJobs
 	}
+	log.Debugf("mips worker handling %v", qa)
 	rootHash, err := vm.RunCheckPointZeroRoot(qa.Prompt)
 	if err != nil {
 		qa.Err = err
