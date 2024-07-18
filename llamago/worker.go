@@ -50,7 +50,7 @@ func defaultOpts() Options {
 		Pods:    1,
 		Threads: runtime.NumCPU(),
 		Context: 1024,
-		Predict: 512,
+		Predict: 64,
 		Temp:    0,
 		Silent:  false,
 		Chat:    false,

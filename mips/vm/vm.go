@@ -9,6 +9,7 @@ import (
 	"opml-opt/log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -319,6 +320,10 @@ func MIPSRunRoot(basedir string, target int, nodeID int, programPath string, inp
 			}
 		}
 	})
+	defer func() {
+		mu.Close()
+		runtime.GC()
+	}()
 
 	ZeroRegisters(ram)
 	// not ready for golden yet

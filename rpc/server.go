@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -76,6 +77,7 @@ func (c *Service) Start(ctx context.Context) error {
 	//start gin
 	gin.DefaultWriter = &LoggerMy{}
 	r := gin.Default()
+	pprof.Register(r)
 	//cors middleware
 	r.Use(Cors())
 	r.SetTrustedProxies(nil)
@@ -157,7 +159,7 @@ func (s *Service) HandleQuestion(c *gin.Context) {
 	rep = Resp{
 		ResultCode: 0,
 		ResultMsg:  "",
-		ResultBody: data,
+		ResultBody: string(data),
 	}
 }
 
@@ -167,7 +169,7 @@ type StatusResp struct {
 }
 
 func (s *Service) HandleStatus(c *gin.Context) {
-	status := mips.Status() & llamago.Status()
+	status := mips.Status() | llamago.Status()
 	data, _ := json.Marshal(&StatusResp{
 		Status: status,
 		NodeId: NodeID,

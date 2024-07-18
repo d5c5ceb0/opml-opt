@@ -7,6 +7,7 @@ import (
 	"opml-opt/llamago"
 	"opml-opt/log"
 	"opml-opt/mips"
+	"opml-opt/mips/vm"
 	"opml-opt/rpc"
 	"os"
 	"os/signal"
@@ -48,6 +49,10 @@ var (
 		Usage: "log root path",
 		Value: "./logs",
 	}
+	promptFlag = cli.StringFlag{
+		Name:  "prompt",
+		Value: "Why Golang is so popular?",
+	}
 )
 
 func init() {
@@ -59,6 +64,7 @@ func init() {
 		logFilePath,
 	}
 	app.Action = Start
+	app.Commands = []cli.Command{commandMips}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 }
 
@@ -77,6 +83,28 @@ type Config struct {
 	MipsProgram   string `yaml:"mips_program"`
 	MongoURI      string `yaml:"mongo_uri"`
 	DispatcherUrl string `yaml:"dispatcher"`
+}
+
+var commandMips = cli.Command{
+	Name:  "mips",
+	Usage: "run mips",
+	Flags: []cli.Flag{
+		configPathFlag,
+		promptFlag,
+	},
+	Action: RunMips,
+}
+
+func RunMips(ctx *cli.Context) {
+	conf := loadConfig(ctx)
+	prompt := ctx.String(promptFlag.Name)
+	vm.ModelPath = conf.ModelPath
+	vm.MIPS_PROGRAM = conf.MipsProgram
+	nodeHash, err := vm.RunCheckPointZeroRoot(prompt)
+	if err != nil {
+		panic(err)
+	}
+	println("ok:", nodeHash.String())
 }
 
 func Start(ctx *cli.Context) {
@@ -121,12 +149,13 @@ func Start(ctx *cli.Context) {
 
 	rpc.InitRpcService(conf.Port, conf.ModelName, conf.ModelPath)
 
+	go callHeartBeat(conf)
+
 	contx := context.Background()
 	err = rpc.RpcServer.Start(contx)
 	if err != nil {
 		log.Fatal(err)
 	}
-	go callHeartBeat(conf)
 	waitToExit()
 }
 
@@ -138,6 +167,7 @@ func loadConfig(ctx *cli.Context) Config {
 		if err != nil {
 			log.Fatal("read config error", err)
 		}
+		mips.ConfigPath = configPath
 		err = yaml.Unmarshal(b, &optConfig)
 		if err != nil {
 			log.Fatal(err)

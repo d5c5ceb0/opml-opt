@@ -1,12 +1,22 @@
 package mips
 
 import (
+	"bufio"
+	"bytes"
+	"errors"
+	"fmt"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"opml-opt/callback"
 	"opml-opt/common"
 	"opml-opt/log"
 	"opml-opt/mips/vm"
+	"os"
+	"os/exec"
+	"strings"
 	"sync/atomic"
 )
+
+var ConfigPath string
 
 var MipsWork *Worker
 
@@ -51,11 +61,27 @@ func Inference(qa common.OptQA) error {
 		return common.ErrExceedMaxJobs
 	}
 	log.Debugf("mips worker handling %v", qa)
-	rootHash, err := vm.RunCheckPointZeroRoot(qa.Prompt)
+	cmd := exec.Command(os.Args[0], "mips", "--config", ConfigPath, "--prompt", qa.Prompt)
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		qa.Err = err
-		return err
+		log.Error(err)
 	}
-	qa.StateRoot = rootHash.String()
-	return nil
+	log.Info(string(output))
+	if cmd.ProcessState.Success() {
+		scanner := bufio.NewScanner(bytes.NewBuffer(output))
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.Contains(line, "ok:") {
+				hexStr := strings.TrimLeft(strings.Trim(line, "\n"), "ok: 0x")
+				qa.StateRoot = ethCommon.HexToHash(hexStr).String()
+				return nil
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			qa.Err = fmt.Errorf("error reading child process output:%v", err)
+			return fmt.Errorf("error reading child process output:%v", err)
+		}
+	}
+	qa.Err = errors.New("mips run failed")
+	return errors.New("mips run failed")
 }
