@@ -15,11 +15,12 @@ make build
 config file:
 ```
 port: "1234"
-host: 127.0.0.1
+host: http://127.0.0.1
 model_name: llama
 model_path: ./llama-7b-fp32.bin # model filepath
 mongo_uri: mongodb://admin:admin@127.0.0.1:27017
 mips_program: ./mlgo/ml_mips/ml_mips.bin # mips program path
+dispatcher: http://127.0.0.1:21001/ # dispatcher url
 ```
 ### Run
 ```

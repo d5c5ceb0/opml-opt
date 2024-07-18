@@ -35,7 +35,7 @@ func (c *CallBackService) callBack(qa common.OptQA) {
 		Answer:    qa.Answer,
 		StateRoot: qa.StateRoot,
 	})
-	_, err := doPost(qa.CallBack, string(reqBody), CALLBACK_TIMEOUT)
+	_, err := DoPost(qa.CallBack, string(reqBody), CALLBACK_TIMEOUT)
 	if err != nil {
 		log.Errorf("callback post error\n %v \n %v \n %v\n", qa.CallBack, string(reqBody), err)
 	}
@@ -69,7 +69,7 @@ func DoneWork(qa common.OptQA) {
 	}
 }
 
-func doPost(requrl, body string, timeoutS time.Duration) (*http.Response, error) {
+func DoPost(requrl, body string, timeoutS time.Duration) (*http.Response, error) {
 	req, err := http.NewRequest("POST", requrl, bytes.NewBufferString(body))
 	if err != nil {
 		log.Errorf("Failed to new http request:%s", err.Error())
@@ -77,7 +77,7 @@ func doPost(requrl, body string, timeoutS time.Duration) (*http.Response, error)
 	}
 
 	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 	client := &http.Client{Timeout: timeoutS}
 	resp, err := client.Do(req)
