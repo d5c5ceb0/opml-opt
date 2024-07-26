@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	ethCommon "github.com/ethereum/go-ethereum/common"
 	"opml-opt/callback"
 	"opml-opt/common"
 	"opml-opt/log"
@@ -13,7 +12,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync/atomic"
+	"sync"
+
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 var ConfigPath string
@@ -23,15 +24,16 @@ var MipsWork *Worker
 type Worker struct {
 	ModelName string
 	ModelPath string
-	JobsNum   atomic.Int32
+	JobsNum   int32
 	MaxJobs   int32
+	mut       sync.Mutex
 }
 
 func InitWorker(modelName string, modelPath string, programPath string) error {
 	MipsWork = &Worker{
 		ModelName: modelName,
 		ModelPath: modelPath,
-		JobsNum:   atomic.Int32{},
+		JobsNum:   0,
 		MaxJobs:   1,
 	}
 	vm.ModelPath = modelPath
@@ -40,7 +42,7 @@ func InitWorker(modelName string, modelPath string, programPath string) error {
 }
 
 func Status() int {
-	jobsNum := MipsWork.JobsNum.Load()
+	jobsNum := MipsWork.JobsNum
 	if jobsNum > MipsWork.MaxJobs {
 		return 1
 	} else {
@@ -55,11 +57,18 @@ func Inference(qa common.OptQA) error {
 		}
 		callback.DoneWork(qa)
 	}()
-	jobsNum := MipsWork.JobsNum.Load()
-	if jobsNum > MipsWork.MaxJobs {
-		qa.Err = common.ErrExceedMaxJobs
+
+	MipsWork.mut.Lock()
+	if MipsWork.JobsNum >= MipsWork.MaxJobs {
+		log.Info("mips jobs exceed")
 		return common.ErrExceedMaxJobs
 	}
+	MipsWork.JobsNum++
+	MipsWork.mut.Unlock()
+	defer func() {
+		MipsWork.JobsNum -= 1
+	}()
+
 	log.Debugf("mips worker handling %v", qa)
 	cmd := exec.Command(os.Args[0], "mips", "--config", ConfigPath, "--prompt", qa.Prompt)
 	output, err := cmd.CombinedOutput()

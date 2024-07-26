@@ -5,7 +5,7 @@ import (
 	"opml-opt/common"
 	"opml-opt/log"
 	"runtime"
-	"sync/atomic"
+	"sync"
 	"time"
 
 	"github.com/gotzmann/llama.go/pkg/llama"
@@ -17,8 +17,9 @@ var LlamaWorker *Worker
 type Worker struct {
 	ModelName string
 	ModelPath string
-	JobsNum   atomic.Int32
+	JobsNum   int32
 	MaxJobs   int32
+	mut       sync.Mutex
 }
 
 type Options struct {
@@ -62,7 +63,7 @@ func defaultOpts() Options {
 }
 
 func Status() int {
-	jobsNum := LlamaWorker.JobsNum.Load()
+	jobsNum := LlamaWorker.JobsNum
 	if jobsNum > LlamaWorker.MaxJobs {
 		return 1
 	} else {
@@ -107,7 +108,7 @@ func InitWorker(modelName string, modelPath string) error {
 	LlamaWorker = &Worker{
 		ModelName: modelName,
 		ModelPath: modelPath,
-		JobsNum:   atomic.Int32{},
+		JobsNum:   0,
 		MaxJobs:   1,
 	}
 	return nil
@@ -120,12 +121,16 @@ func Inference(qa common.OptQA) error {
 		}
 		callback.DoneWork(qa)
 	}()
-	jobsNum := LlamaWorker.JobsNum.Load()
-	if jobsNum > LlamaWorker.MaxJobs {
+	LlamaWorker.mut.Lock()
+	if LlamaWorker.JobsNum >= LlamaWorker.MaxJobs {
+		log.Info("llama go jobs exceed")
 		return common.ErrExceedMaxJobs
 	}
-	LlamaWorker.JobsNum.Add(1)
-	defer LlamaWorker.JobsNum.Add(-1)
+	LlamaWorker.JobsNum++
+	LlamaWorker.mut.Unlock()
+	defer func() {
+		LlamaWorker.JobsNum -= 1
+	}()
 
 	jobID := qa.ReqId
 	server.PlaceJob(qa.ReqId, " "+qa.Prompt)
@@ -133,7 +138,6 @@ func Inference(qa common.OptQA) error {
 	log.Infof("llama go handling job %v", qa)
 	for {
 		time.Sleep(100 * time.Millisecond)
-		log.Debugf("llama go job check %v", qa.Answer)
 		if _, ok := server.Jobs[jobID]; !ok {
 			break
 		}

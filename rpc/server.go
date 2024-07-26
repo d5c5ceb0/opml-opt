@@ -105,6 +105,7 @@ type QuestionReq struct {
 	Prompt   string `json:"prompt"`
 	Model    string `json:"model"`
 	CallBack string `json:"callback"`
+	ReqId    string `json:"req_id"`
 }
 
 type QuestionResp struct {
@@ -122,12 +123,12 @@ func (s *Service) HandleQuestion(c *gin.Context) {
 		if rep.ResultCode == Success {
 			c.JSON(http.StatusOK, rep)
 		} else {
-			c.JSON(http.StatusInternalServerError, rep)
+			c.JSON(http.StatusBadRequest, rep)
 		}
 	}()
 	req := QuestionReq{}
 	c.BindJSON(&req)
-	reqId := uuid.NewString()
+	reqId := req.ReqId
 	qa := common.OptQA{
 		ReqId:     reqId,
 		Model:     req.Model,
@@ -137,6 +138,17 @@ func (s *Service) HandleQuestion(c *gin.Context) {
 		StartTime: time.Now().Unix(),
 		CallBack:  req.CallBack,
 	}
+
+	if llamago.LlamaWorker.JobsNum >= llamago.LlamaWorker.MaxJobs || mips.MipsWork.JobsNum >= mips.MipsWork.MaxJobs {
+		log.Info("job exceed")
+		rep = Resp{
+			ResultCode: -1,
+			ResultMsg:  "jobs exceed",
+			ResultBody: "",
+		}
+		return
+	}
+
 	go func() {
 		err := llamago.Inference(qa)
 		if err != nil {
@@ -157,7 +169,7 @@ func (s *Service) HandleQuestion(c *gin.Context) {
 	})
 
 	rep = Resp{
-		ResultCode: 0,
+		ResultCode: Success,
 		ResultMsg:  "",
 		ResultBody: string(data),
 	}

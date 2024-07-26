@@ -21,8 +21,8 @@ func callHeartBeat(config Config) {
 		log.Fatal(err)
 	}
 	call := func() {
-		mipsJobs := mips.MipsWork.JobsNum.Load()
-		llamagoJobs := llamago.LlamaWorker.JobsNum.Load()
+		mipsJobs := mips.MipsWork.JobsNum
+		llamagoJobs := llamago.LlamaWorker.JobsNum
 		queue := mipsJobs
 		if llamagoJobs > mipsJobs {
 			queue = llamagoJobs
