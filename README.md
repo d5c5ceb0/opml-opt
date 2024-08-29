@@ -1,3 +1,9 @@
+# OPML on Eigenlayer
+
+OPML (Optimistic Machine Learning) is an optimistic computing model that allows untrusted Operator nodes to execute inference tasks, while leveraging an on-chain dispute resolution mechanism to verify the correctness of the results. By integrating with Eigenlayer, OPML can take advantage of its distributed ledger and cryptoeconomic incentive infrastructure.
+
+
+
 # Deploy
 ## Download model
 
