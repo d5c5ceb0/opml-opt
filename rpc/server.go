@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"opml-opt/callback"
 	"opml-opt/common"
 	"opml-opt/llamago"
 	"opml-opt/log"
@@ -87,7 +88,7 @@ func (c *Service) Start(ctx context.Context) error {
 
 	apiV1 := r.Group("/api/v1/")
 	apiV1.POST("/question", c.HandleQuestion)
-	apiV1.POST("/status", c.HandleStatus)
+	apiV1.GET("/status", c.HandleStatus)
 
 	address := "0.0.0.0:" + c.port
 	r.Run(address)
@@ -114,6 +115,7 @@ type QuestionResp struct {
 }
 
 func (s *Service) HandleQuestion(c *gin.Context) {
+	callback.IsBusy = true
 	rep := Resp{
 		ResultCode: ErrorCodeUnknow,
 		ResultMsg:  InternalError,
@@ -190,6 +192,11 @@ func (s *Service) HandleStatus(c *gin.Context) {
 		ResultCode: 0,
 		ResultMsg:  "",
 		ResultBody: string(data),
+	}
+	if callback.IsBusy {
+		rep.ResultMsg = "1"
+	} else {
+		rep.ResultMsg = "0"
 	}
 	c.JSON(http.StatusOK, rep)
 }
