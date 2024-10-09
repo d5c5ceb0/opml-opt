@@ -1,20 +1,23 @@
 package llamago
 
 import (
+	"context"
+	"fmt"
 	"opml-opt/callback"
 	"opml-opt/common"
 	"opml-opt/log"
+	"os/exec"
 	"runtime"
 	"sync"
 	"time"
 
 	"github.com/gotzmann/llama.go/pkg/llama"
-	"github.com/gotzmann/llama.go/pkg/server"
 )
 
 var LlamaWorker *Worker
 
 type Worker struct {
+	Params    *llama.ModelParams
 	ModelName string
 	ModelPath string
 	JobsNum   int32
@@ -92,20 +95,9 @@ func InitWorker(modelName string, modelPath string) error {
 		RepeatPenalty: 1.10,
 		MemoryFP16:    true,
 	}
-	vocab, model, err := llama.LoadModel(params.Model, params, true)
-	if err != nil {
-		return err
-	}
 
-	server.MaxPods = opts.Pods
-	server.Host = opts.Host
-	server.Port = opts.Port
-	server.Vocab = vocab
-	server.Model = model
-	server.Params = params
-	log.Info("starting llamago server")
-	go server.Run()
 	LlamaWorker = &Worker{
+		Params:    params,
 		ModelName: modelName,
 		ModelPath: modelPath,
 		JobsNum:   0,
@@ -132,25 +124,31 @@ func Inference(qa common.OptQA) error {
 		LlamaWorker.JobsNum -= 1
 	}()
 
-	jobID := qa.ReqId
-	server.PlaceJob(qa.ReqId, " "+qa.Prompt)
-	qa.Answer = ""
 	log.Infof("llama go handling job %v", qa)
-	for {
-		time.Sleep(100 * time.Millisecond)
-		if _, ok := server.Jobs[jobID]; !ok {
-			break
-		}
-		if qa.Answer != server.Jobs[jobID].Output {
-			if len(server.Jobs[jobID].Output) < len(qa.Answer) {
-				break
-			}
-			diff := server.Jobs[jobID].Output[len(qa.Answer):]
-			qa.Answer += diff
-		}
-		if server.Jobs[jobID].Status == "finished" {
-			break
-		}
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "./llamacpp/llama-cli",
+		"-m", "./llama-2-7b-chat.Q2_K.gguf", "-p", qa.Prompt,
+		"--temp", "0", "-n", "256")
+
+	output, err := cmd.CombinedOutput()
+
+	if ctx.Err() == context.DeadlineExceeded {
+		fmt.Println("Command timed out: %v", ctx.Err())
 	}
+
+	if err != nil {
+		fmt.Println("Command execution failed: %v, Output: %s", err, string(output))
+	}
+
+	qa.Answer = string(output)
+
+	if cmd.ProcessState.Success() {
+		fmt.Println("Command executed successfully.")
+	} else {
+		fmt.Println("Command execution failed with non-zero exit status.")
+	}
+
 	return nil
 }
