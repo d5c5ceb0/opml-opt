@@ -88,7 +88,7 @@ func LoadInputData(mu uc.Unicorn, file string, ram map[uint32](uint32)) error {
 		fmt.Println(err)
 		return err
 	}
-	if len(buf) >= 10*1024*1024 {
+	if len(buf) >= 1024 {
 		fmt.Println("data too large")
 		buf = buf[:1024]
 		// return errors.New("data too large")

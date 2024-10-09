@@ -1,6 +1,6 @@
 module opml-opt
 
-go 1.22.0
+go 1.22.8
 
 require (
 	github.com/gin-gonic/gin v1.9.1
@@ -26,6 +26,7 @@ require (
 	github.com/holiman/uint256 v1.3.0 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
+	github.com/kshard/float8 v0.0.3 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect

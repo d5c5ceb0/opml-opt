@@ -11,6 +11,7 @@ import (
 )
 
 var CallBack *CallBackService
+var IsBusy bool
 
 const CALLBACK_TIMEOUT = time.Second * 60
 
@@ -23,10 +24,12 @@ func init() {
 	CallBack = &CallBackService{
 		MipsWorks: map[string]common.OptQA{},
 	}
+	IsBusy = false
 }
 
 func (c *CallBackService) callBack(qa common.OptQA) {
 	log.Debugf("work done \n%v\n", qa)
+	IsBusy = false
 	reqBody, _ := json.Marshal(&common.CallbackReq{
 		NodeId:    common.NodeID,
 		ReqId:     qa.ReqId,

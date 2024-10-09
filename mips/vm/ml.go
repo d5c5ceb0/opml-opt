@@ -1,12 +1,12 @@
 package vm
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"runtime"
 
 	llama "mlgo/examples/llama/llama_go"
-	"mlgo/examples/mnist"
 	"mlgo/ml"
 )
 
@@ -41,28 +41,7 @@ func LLAMA(nodeID int, modelFile string, prompt string) ([]byte, int, error) {
 }
 
 func MNIST(nodeID int, modelFile string, dataFile string) ([]byte, int, error) {
-	threadCount := 1
-	if modelFile == "" {
-		modelFile = "../../mlgo/examples/mnist/models/mnist/ggml-model-small-f32.bin"
-	}
-	if dataFile == "" {
-		dataFile = "../../mlgo/examples/mnist/models/mnist/input_7"
-	}
-	model, err := mnist.LoadModel(modelFile)
-	if err != nil {
-		fmt.Println("Load model error: ", err)
-		return nil, 0, err
-	}
-	// load input
-	input, err := MNIST_Input(dataFile, false)
-	if err != nil {
-		fmt.Println("Load input data error: ", err)
-		return nil, 0, err
-	}
-	graph, ctx := mnist.ExpandGraph(model, threadCount, input)
-	ml.GraphComputeByNodes(ctx, graph, nodeID)
-	envBytes := ml.SaveComputeNodeEnvToBytes(uint32(nodeID), graph.Nodes[nodeID], graph, true)
-	return envBytes, int(graph.NodesCount), nil
+	return nil, 0, errors.New("unsupport")
 }
 
 func MNIST_Input(dataFile string, show bool) ([]float32, error) {

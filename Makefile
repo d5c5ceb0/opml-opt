@@ -40,7 +40,6 @@ libunicorn_rebuild:
 
 mlgo:
 	cd mlgo && pip install -r requirements.txt
-	cd mlgo/examples/mnist_mips && ./build.sh
 	cd mlgo/ml_mips && ./build.sh
 .PHONY: mlgo
 
