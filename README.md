@@ -9,11 +9,29 @@ OPML (Optimistic Machine Learning) is an optimistic computing model that allows 
 
 **LLaMA-7B:** [llama-7b-fp32.bin](https://nogpu.com/llama-7b-fp32.bin)
 
-**LLaMA-13B:** [llama-13b-fp32.bin](https://nogpu.com/llama-13b-fp32.bin)
+**llama-2-7b-chat.Q2_K.gguf:** [llama-2-7b-chat.Q2_K.gguf](https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/blob/main/llama-2-7b-chat.Q2_K.gguf)
 
 ## Build
+### for main branch
+```
+make build
+```
+
+### for fp16 branch
+
+switch fp16 branch, and
 
 ```
+git submodule update
+make build
+```
+
+### for fp8 branch
+
+switch fp8 branch, and
+
+```
+git submodule update
 make build
 ```
 
@@ -44,7 +62,7 @@ Response:
 ```
 {
     "code": 0, //code==0 success, otherwise failure
-    "msg": "",
+    "msg": "1", //1 for busy; 0 for free
     "data": {
 		"status": 0 // 0 available, 1 busy
         "node_id": ""
